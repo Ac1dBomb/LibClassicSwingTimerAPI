@@ -565,7 +565,7 @@ function lib:UNIT_SPELLCAST_START(_, unitType, _, spell)
 		return
 	end
 	if spell then
-		local now = GetTime()
+		local now = GetTime(), GetTimePrecise()
 		local name, rank, icon, castTime, minRange, maxRange, spellId = GetSpellInfo(spell)
 		unit.casting = true
 		unit.preventSwingReset = unit.auraPreventSwingReset or noreset_swing_spells[spell]
@@ -602,7 +602,7 @@ function lib:UNIT_SPELLCAST_CHANNEL_STOP(_, unitType, _, spell)
 	if not unit then
 		return
 	end
-	local now = GetTime()
+	local now = GetTime(), GetTimePrecise()
 	unit.channeling = false
 	unit.preventSwingReset = unit.auraPreventSwingReset or false
 	if (spell and reset_swing_on_channel_stop_spells[spell]) then
@@ -628,7 +628,7 @@ function lib:PLAYER_EQUIPMENT_CHANGED(_, equipmentSlot)
 end
 
 function lib:PLAYER_ENTER_COMBAT()
-	local now = GetTime()
+	local now = GetTime(), GetTimePrecise()
 	self.player.isAttacking = true
 	if now > (self.player.offExpirationTime - (self.player.offSpeed / 2)) then
 		if self.player.offTimer then
