@@ -6,7 +6,7 @@ end
 
 local frame = CreateFrame("Frame")
 local C_Timer, tonumber = C_Timer, tonumber
-local GetSpellInfo, GetTime, CombatLogGetCurrentEventInfo = GetSpellInfo, GetTime, CombatLogGetCurrentEventInfo
+local GetSpellInfo, GetTime, GetTimePrecise, CombatLogGetCurrentEventInfo = GetSpellInfo, GetTime, GetTimePrecise, CombatLogGetCurrentEventInfo
 local UnitAttackSpeed, UnitAura, UnitGUID, UnitRangedDamage, GetPlayerInfoByGUID = UnitAttackSpeed, UnitAura, UnitGUID, UnitRangedDamage, GetPlayerInfoByGUID
 
 local isRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
@@ -24,6 +24,7 @@ local prevent_reset_swing_auras = nil
 local pause_swing_spells = nil
 local ranged_swing = nil
 local reset_ranged_swing = nil
+
 
 local Unit = {
 	id = nil,
@@ -50,7 +51,7 @@ local Unit = {
 	offTimer = nil,
 	rangedTimer = nil,
 	calculaDeltaTimer = nil,
-
+	
 	casting = false,
 	channeling = false,
 	isAttacking = false,
@@ -69,10 +70,17 @@ function Unit:new(obj)
 	self.__index = self
 	return obj
 end
-
+local function GetTimePrecise()
+    local latency = select(3, GetNetStats()) / 1000 -- divide by 1000 to convert from milliseconds to seconds
+    return GetTime() + latency
+end
 function Unit:CalculateDelta()
+	if not GetTimePrecise() then
+		return
+	end
 	if self.offSpeed > 0 and self.mainExpirationTime ~= nil and self.offExpirationTime ~= nil then
-		self.callbacks:Fire("UNIT_SWING_TIMER_DELTA", self.id, self.mainExpirationTime - self.offExpirationTime)
+		local currentTime = GetTimePrecise()
+		self.callbacks:Fire("UNIT_SWING_TIMER_DELTA", self.id, self.mainExpirationTime - self.offExpirationTime, currentTime)
 	end
 end
 
@@ -90,7 +98,7 @@ function Unit:SwingStart(hand, startTime, isReset)
 		self.mainExpirationTime = self.lastMainSwing + self.mainSpeed
 		self.callbacks:Fire("UNIT_SWING_TIMER_START", self.id, self.mainSpeed, self.mainExpirationTime, hand)
 		if self.mainSpeed > 0 and self.mainExpirationTime - GetTime() > 0 then
-			self.mainTimer = C_Timer.NewTimer(self.mainExpirationTime - GetTime(), function()
+			self.mainTimer = C_Timer.NewTimer(self.mainExpirationTime - GetTime(), function()	
 				self:SwingEnd("mainhand")
 			end)
 		end
@@ -110,10 +118,12 @@ function Unit:SwingStart(hand, startTime, isReset)
 		self.offExpirationTime = self.lastOffSwing + self.offSpeed
 		if self.calculaDeltaTimer then
 			self.calculaDeltaTimer:Cancel()
+		
 		end
 		if self.offSpeed > 0 and self.firstOffSwing == false and self.isAttacking then
 			self.offExpirationTime = self.lastOffSwing + (self.offSpeed / 2)
 			self:CalculateDelta()
+
 			self.callbacks:Fire("UNIT_SWING_TIMER_UPDATE", self.id, self.offSpeed, self.offExpirationTime, hand)
 		elseif self.offSpeed > 0 then
 			self.callbacks:Fire("UNIT_SWING_TIMER_START", self.id, self.offSpeed, self.offExpirationTime, hand)
