@@ -172,7 +172,7 @@ function Unit:SwingEnd(hand)
 	end
 	self.callbacks:Fire("UNIT_SWING_TIMER_STOP", self.id, hand)
 	if (self.casting or self.channeling) and self.isAttacking and hand ~= "ranged" then
-		local now = GetTime()
+		local now = GetTime(), GetTimePrecise()
 		if isRetail and hand == "mainhand" then		
 			self:SwingStart(hand, now, true)
 			self.callbacks:Fire("UNIT_SWING_TIMER_CLIPPED", self.id, hand)
@@ -235,7 +235,7 @@ function lib:PLAYER_ENTERING_WORLD()
 	self.player.class = select(2,GetPlayerInfoByGUID(self.player.GUID))
 
 	local mainSpeed, offSpeed = UnitAttackSpeed("player")
-	local now = GetTime()
+	local now = GetTime(), GetTimePrecise()
 
 	self.player.mainSpeed = mainSpeed or 3 -- some dummy non-zero value to prevent infinities
 	self.player.offSpeed = offSpeed or 0
@@ -279,7 +279,7 @@ function lib:PLAYER_TARGET_CHANGED()
 	if(not self.isPlayer) then
 		offSpeed = mainSpeed
 	end
-	local now = GetTime()
+	local now = GetTime(), GetTimePrecise()
 
 	self.target.mainSpeed = mainSpeed or 3 -- some dummy non-zero value to prevent infinities
 	self.target.offSpeed = offSpeed or 0
@@ -398,7 +398,7 @@ function lib:UNIT_ATTACK_SPEED(unitGUID)
 		return
 	end
 	if isClassic and unit.class == "PALADIN" then return end -- Ignore UNIT_ATTACK_SPEED on Classic for Paladin. Seal of the Crusader snapshot. No other dynamic speed change.
-	local now = GetTime()
+	local now = GetTime(), GetTimePrecise()
 	if
 		unit.skipNextAttackSpeedUpdate
 		and tonumber(unit.skipNextAttackSpeedUpdate)
